@@ -10,10 +10,17 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Checkout repository code
+    - name: Checkout SMPSPlay code
       uses: actions/checkout@v4
-      with:
-        submodules: recursive # Force GitHub à télécharger les bibliothèques audio externes liées au projet
+
+    - name: Clone missing libvgm dependency
+      run: |
+        git clone https://github.com ../libvgm
+        # Création du dossier audio requis pour l'inclusion des en-têtes
+        New-Item -ItemType Directory -Force -Path "./audio"
+        # Copie des fichiers audio indispensables à la compilation de Sound.c
+        Copy-Item -Path "../libvgm/audio/*" -Destination "./audio/" -Recurse -Force
+      shell: pwsh
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
@@ -21,7 +28,8 @@ jobs:
     - name: Compile Executable
       run: |
         if (Test-Path "*.sln") {
-            msbuild.exe /p:Configuration=Release /p:PlatformToolset=v143
+            # Inclusion du dossier courant pour que le compilateur trouve "audio/AudioStream.h"
+            msbuild.exe /p:Configuration=Release /p:PlatformToolset=v143 /p:AdditionalIncludeDirectories="."
         } else {
             pip install pyinstaller
             pyinstaller --onefile *.py
