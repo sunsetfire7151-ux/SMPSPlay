@@ -12,18 +12,17 @@ jobs:
     steps:
     - name: Checkout repository code
       uses: actions/checkout@v4
+      with:
+        submodules: recursive # Force GitHub à télécharger les bibliothèques audio externes liées au projet
 
     - name: Add MSBuild to PATH
       uses: microsoft/setup-msbuild@v2
 
     - name: Compile Executable
       run: |
-        # Si le dépôt contient un fichier de solution Visual Studio (.sln)
         if (Test-Path "*.sln") {
-            # On force MSBuild à utiliser les outils de compilation modernes (v143) installés sur le serveur GitHub
             msbuild.exe /p:Configuration=Release /p:PlatformToolset=v143
         } else {
-            # Si c'est un simple script Python à packager
             pip install pyinstaller
             pyinstaller --onefile *.py
         }
@@ -36,4 +35,3 @@ jobs:
           **/Release/*.exe
           **/bin/*.exe
           dist/*.exe
-
