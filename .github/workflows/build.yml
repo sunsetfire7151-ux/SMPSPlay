@@ -13,12 +13,21 @@ jobs:
     - name: Checkout SMPSPlay code
       uses: actions/checkout@v4
 
-    - name: Clone missing libvgm dependency
+    - name: Download libvgm directly via ZIP
       run: |
-        git clone https://github.com ../libvgm
-        # Création du dossier audio requis pour l'inclusion des en-têtes
+        # Téléchargement direct du ZIP pour éviter le bug de l'URL Git
+        Invoke-WebRequest -Uri "https://github.com" -OutFile "libvgm.zip"
+        
+        # Extraction de l'archive
+        Expand-Archive -Path "libvgm.zip" -DestinationPath "../"
+        
+        # Renommer le dossier extrait pour correspondre à la structure attendue
+        Rename-Item -Path "../libvgm-master" -NewName "libvgm"
+        
+        # Création du dossier audio local requis pour le compilateur
         New-Item -ItemType Directory -Force -Path "./audio"
-        # Copie des fichiers audio indispensables à la compilation de Sound.c
+        
+        # Copie des fichiers d'en-tête (AudioStream.h, etc.)
         Copy-Item -Path "../libvgm/audio/*" -Destination "./audio/" -Recurse -Force
       shell: pwsh
 
@@ -28,7 +37,7 @@ jobs:
     - name: Compile Executable
       run: |
         if (Test-Path "*.sln") {
-            # Inclusion du dossier courant pour que le compilateur trouve "audio/AudioStream.h"
+            # Compilation avec inclusion du dossier contenant le sous-dossier audio
             msbuild.exe /p:Configuration=Release /p:PlatformToolset=v143 /p:AdditionalIncludeDirectories="."
         } else {
             pip install pyinstaller
