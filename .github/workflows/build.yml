@@ -1,0 +1,36 @@
+name: Generate Windows Executable
+
+on:
+  push:
+    branches: [ "master", "main" ]
+  workflow_dispatch: # Permet de lancer la création manuellement en un clic
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v4
+
+    - name: Add MSBuild to PATH
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Compile Executable
+      run: |
+        # Si le dépôt contient un fichier de solution Visual Studio (.sln)
+        if (Test-Path "*.sln") {
+            msbuild.exe /p:Configuration=Release
+        } else {
+            # Si c'est un simple script Python à packager
+            pip install pyinstaller
+            pyinstaller --onefile *.py
+        }
+
+    - name: Upload compiled EXE file
+      uses: actions/upload-artifact@v4
+      with:
+        name: Sonic3-Music-Tool-Windows
+        path: |
+          **/Release/*.exe
+          dist/*.exe
